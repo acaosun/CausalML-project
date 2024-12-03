@@ -47,7 +47,6 @@ def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X, Y, Z, b: Callable, q: C
         delta = theta[k-1]
 
         # (n,1) * (n, n_q) -> (n, n_q)
-        print(X.shape)
         moment1 = (Y - b(V, W, X, gamma)).reshape((N,1)) * q(V, X, Z)
         # (n_q)
         moment1 = np.mean(moment1, axis=0)

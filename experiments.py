@@ -55,12 +55,20 @@ def iid_exp():
                         print(f"Iteration {i}")
                     U, V, W, X, Y, Z = data_generation.get_iid_data(eta, xi, N)
                     # print(data)
+                    b_matrix = np.c_[np.ones(N), V, W, X, X*V, X*W]
+                    b1_matrix = np.c_[np.ones(N), V, W, np.ones(N), V, W]
+                    b0_matrix = np.c_[np.ones(N), V, W, np.zeros(N), np.zeros(N), np.zeros(N)]
                     def b(V, W, X, gamma):
-                        
-                        return np.c_[np.ones(N), V, W, X, X*V, X*W] @ gamma
+                        if np.all(X == np.ones(N)):
+                            return b1_matrix @ gamma
+                        elif np.all(X == np.zeros(N)): 
+                            return b0_matrix @ gamma
+                        else:
+                            return b_matrix @ gamma
                     
+                    q_matrix = np.c_[np.ones(N), V, X, Z, X*V, X*Z]
                     def q(V, X, Z):
-                        return np.c_[np.ones(N), V, X, Z, X*V, X*Z]
+                        return q_matrix
                     
 
                     result = binary_proximal_GMM(V, W, X, Y, Z, b, q, k)
@@ -169,8 +177,8 @@ def time_series_exp():
 
 
 if __name__ == "__main__":
-    # iid_exp()
+    iid_exp()
 
 
-    time_series_exp()
+    # time_series_exp()
 
