@@ -143,12 +143,21 @@ def time_series_exp():
                     if i % 100 == 0:
                         print(f"Iteration {i}")
                     U, V, V_prev, W, X, X_prev, Y, Z = data_generation.get_time_series_data(eta, xi, N)
+                    b_matrix = np.c_[np.ones(N), V, V_prev, W, X, X_prev]
+                    b1_matrix = np.c_[np.ones(N), V, V_prev, W, np.ones(N), X_prev]
+                    b0_matrix = np.c_[np.ones(N), V, V_prev, W, np.zeros(N), X_prev]
 
                     def b(V, V_prev, W, X, X_prev, gamma):
-                        return np.c_[np.ones(N), V, V_prev, W, X, X_prev] @ gamma
+                        if np.all(X == np.ones(N)):
+                            return b1_matrix @ gamma
+                        elif np.all(X == np.zeros(N)): 
+                            return b0_matrix @ gamma
+                        else:
+                            return b_matrix @ gamma
                     
+                    q_matrix = np.c_[np.ones(N), V, V_prev, X, X_prev, Z]
                     def q(V, V_prev, X, X_prev, Z):
-                        return np.c_[np.ones(N), V, V_prev, X, X_prev, Z]
+                        return q_matrix
                     
 
                     result = time_series_binary_proximal_GMM(V, V_prev, W, X, X_prev, Y, Z, b, q, k)
@@ -177,8 +186,8 @@ def time_series_exp():
 
 
 if __name__ == "__main__":
-    iid_exp()
+    # iid_exp()
 
 
-    # time_series_exp()
+    time_series_exp()
 
