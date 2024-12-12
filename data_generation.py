@@ -1,6 +1,34 @@
 import numpy as np
 
 
+def ipw_testing_data(eta : float, xi: float, N: int):
+    """
+    eta: The level of confounding
+    xi: Level of association between counfounding variables and negative treatment outcome
+    N: The amount of data to be generated
+    """
+    UV = np.random.multivariate_normal([0,0], [[1, 0.5], [0.5, 1]], size = N)
+    U = UV[:,0]
+    V = UV[:,1]
+
+    U = np.zeros(N)
+
+    epsilon_Z = np.random.standard_normal(size = N)
+    epsilon_W = np.random.standard_normal(size = N)
+    Z = 0.5 + 0.5*V + U + epsilon_Z
+    W = 1 - V + xi*U + epsilon_W
+
+    probs = -0.5 + Z + 0.5*V + eta*U
+    probs = 1 / (1 + np.exp(-1 * probs))
+
+    X = np.random.binomial(n = 1, p = probs)
+
+    Y = 1 + 0.5*X + 2*V + U + 1.5*X*U + 2*epsilon_W
+
+    return U, V, W, X, Y, Z
+
+
+
 def get_iid_data(eta : float, xi: float, N: int):
     """
     eta: The level of confounding
@@ -41,7 +69,7 @@ def get_time_series_data(eta : float, xi: float, N: int):
         if i == 0:
             U[i] = np.random.standard_normal()
         else:
-            U[i] = xi*U[i-1] + epsilon_U[i]
+            U[i] = xi*U[i-1] + ((1 - xi**2)**(1/2))*epsilon_U[i]
 
     epsilon_V = np.random.standard_normal(N+2)
     V = 0.6*U + epsilon_V

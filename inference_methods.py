@@ -2,10 +2,18 @@ from typing import Callable
 
 import numpy as np
 import scipy
-import sklearn.linear_model
+import pandas as pd
+import sklearn
+
 import data_generation
 
-import sklearn
+
+
+from causallib.datasets import load_nhefs
+from causallib.estimation import IPW
+from causallib.evaluation import evaluate
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import LabelEncoder
 
 
 def gmm(g : Callable, Omega, k: int):
@@ -71,26 +79,46 @@ def ipw(V, W, X, Y, Z):
     """
     N = Y.shape[0]
 
-    # Use V as features to fit a logistic model for X
-    p_model = sklearn.linear_model.LogisticRegression(penalty=None)
-    features = np.c_[V, Z]
-    train_size = features.shape[0] // 2
-    test_size = features.shape[0] - train_size
+    data = pd.DataFrame({
+        'V': V,
+        'Z': Z,
+        'W': W,
+    })
 
-    train_features = features[:train_size]
-    test_features = features[train_size:]
+    le = LabelEncoder()
+    treatment = pd.Series(le.fit_transform(X))
+    outcome = pd.Series(Y)
 
-    p_model.fit(train_features, X[:train_size])
+
+    learner = LogisticRegression(solver="liblinear")
+    ipw = IPW(learner)
+    ipw.fit(data, treatment)
+    outcomes = ipw.estimate_population_outcome(data, treatment, outcome)
+    effect = ipw.estimate_effect(outcomes[1], outcomes[0], effect_types=["diff"])
+
+    eval_results = evaluate(ipw, data, treatment, outcome)
+    # eval_results.plot_all()
+
+    # # Use V as features to fit a logistic model for X
+    # p_model = sklearn.linear_model.LogisticRegression()
+    # features = np.c_[V]
+    # train_size = features.shape[0] // 2
+    # test_size = features.shape[0] - train_size
+
+    # train_features = features[:train_size]
+    # test_features = features[train_size:]
+
+    # p_model.fit(train_features, X[:train_size])
 
 
-    probs = p_model.predict_proba(test_features)
+    # probs = p_model.predict_proba(test_features)
 
-    effect1 = 1/N * np.sum(Y[train_size:] * X[train_size:]/probs[:, 1])
-    effect0 = 1/N * np.sum(Y[train_size:] * (1 - X[train_size:])/probs[:,0])
+    # effect1 = 1/N * np.sum(Y[train_size:] * X[train_size:]/probs[:, 1])
+    # effect0 = 1/N * np.sum(Y[train_size:] * (1 - X[train_size:])/probs[:,0])
 
     # print(effect1)
     # print(effect0)
-    return effect1 - effect0
+    return effect['diff']
 
 
 
@@ -137,11 +165,11 @@ def time_series_binary_proximal_GMM(V: np.ndarray, V_prev, W: np.ndarray, X, X_p
     return gmm(g, Omega, k)[k-1] #Last entry should be Delta, the ATE.
 
 
-def lagged_ols(V, W, X, X_prev, Y, Z):
+def lagged_ols(V, V_prev, W, X, X_prev, Y, Z):
     model = sklearn.linear_model.LinearRegression()
     N = Y.shape[0]
-    features = np.c_[V, W, X, X_prev, Z]
-    X_index = 2
+    features = np.c_[V, V_prev, W, X, X_prev, Z]
+    X_index = 3
 
     model.fit(features, Y)
 

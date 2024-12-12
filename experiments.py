@@ -9,15 +9,15 @@ def iid_exp():
     """
     6.1: i.i.d Experiments
     """
-    # Ns = [500, 1500]
-    # etas = [0.0, 0.3, 0.5]
-    # xis = [0.2, 0.4, 0.6]
+    Ns = [500, 1500]
+    etas = [0.0, 0.3, 0.5]
+    xis = [0.2, 0.4, 0.6]
 
-    xis = [0.6, 0.6]
-    etas = [0, 0]
-    Ns = [1500]
+    # xis = [0.6, 0.6]
+    # etas = [0, 0]
+    # Ns = [1500]
 
-    num_sims = 100
+    num_sims = 1000
 
     # Represents the dimension of the parameter space for GMM.
     k = 7
@@ -98,15 +98,15 @@ def time_series_exp():
     """
     6.2: Time Series Experiments:
     """
-    # Ns = [500, 1500]
-    # etas = [0.0, 0.3, 0.5]
-    # xis = [0.7, 0.8, 0.9]
+    Ns = [500, 1500]
+    etas = [0.0, 0.3, 0.5]
+    xis = [0.7, 0.8, 0.9]
 
-    xis = [0.6, 0.6]
-    etas = [0, 0]
-    Ns = [1500]
+    # xis = [0.6, 0.9]
+    # etas = [0, 0.5]
+    # Ns = [1500]
 
-    num_sims = 100
+    num_sims = 1000
 
     # Represents the dimension of the parameter space for GMM.
     k = 7
@@ -135,13 +135,14 @@ def time_series_exp():
             
             for N_i in range(len(Ns)):
                 N = Ns[N_i]
-                print(f"eta: {eta}, xi: {xi}, N: {N}")
+                print(f"xi: {xi}, eta: {eta}, N: {N}")
                 gmm_results = []
                 lag_results = []
                 ols_results = []
                 for i in range(num_sims):
                     if i % 100 == 0:
                         print(f"Iteration {i}")
+
                     U, V, V_prev, W, X, X_prev, Y, Z = data_generation.get_time_series_data(eta, xi, N)
                     b_matrix = np.c_[np.ones(N), V, V_prev, W, X, X_prev]
                     b1_matrix = np.c_[np.ones(N), V, V_prev, W, np.ones(N), X_prev]
@@ -164,7 +165,7 @@ def time_series_exp():
                     gmm_results.append(result)
 
                     # Lagged_ols needs access to the previous X as well.
-                    result = lagged_ols(V, W, X, X_prev, Y, Z)
+                    result = lagged_ols(V, V_prev, W, X, X_prev, Y, Z)
                     lag_results.append(result)
 
                     result = ols(V, W, X, Y, Z)
@@ -181,13 +182,14 @@ def time_series_exp():
             subplot.axhline(y=0.7, linestyle='--')
 
             subplot.set_xticks([(1 + len(Ns)) / 2, (len(Ns)+2 + 2*len(Ns)+1) / 2, (2*len(Ns)+3 + 3*len(Ns)+2) / 2], labels = ["NC", "LAG_OLS", "OLS"])
+            subplot.set_ylim(0.3, 1.1)
     plt.show()
 
 
 
 if __name__ == "__main__":
-    # iid_exp()
+    iid_exp()
 
 
-    time_series_exp()
+    # time_series_exp()
 
