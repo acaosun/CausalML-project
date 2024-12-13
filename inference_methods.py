@@ -34,7 +34,9 @@ def gmm(g : Callable, Omega, k: int):
     return result.x
 
 
-def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X, Y, Z, b: Callable, q: Callable, k: int):
+def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X: np.ndarray, Y: np.ndarray, Z: np.ndarray,
+                        b: np.ndarray, b0: np.ndarray, b1: np.ndarray, q: Callable, k: int
+    ):
     """
     V: The conditioning variables. Shape (N, n_V)
     W: The negative control outcomes. Shape (N, n_U)
@@ -55,13 +57,13 @@ def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X, Y, Z, b: Callable, q: C
         delta = theta[k-1]
 
         # (n,1) * (n, n_q) -> (n, n_q)
-        moment1 = (Y - b(V, W, X, gamma)).reshape((N,1)) * q(V, X, Z)
+        moment1 = (Y - b @ gamma).reshape((N,1)) * q(V, X, Z)
         # (n_q)
         moment1 = np.mean(moment1, axis=0)
 
         # (1,) - (n, 1) -> (n, 1)
         # (1,)
-        moment2 = delta - (b(V, W, np.ones(N), gamma) - b(V, W, np.zeros(N), gamma))
+        moment2 = delta - (b1 @ gamma - b0 @ gamma)
         moment2 = np.mean(moment2, axis=0)
 
         moment = np.r_[moment1, moment2]
@@ -69,8 +71,30 @@ def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X, Y, Z, b: Callable, q: C
         return moment
         
     Omega = np.identity(k)
+    theta = gmm(g, Omega, k)
+    gamma = theta[:k-1]
+    delta = theta[k-1]
 
-    return gmm(g, Omega, k)[k-1] #Last entry should be Delta, the ATE.
+    # Compute Sigma0, matrix required for confidence interval
+    moment1 = (Y - b @ gamma).reshape((N,1)) * q(V, X, Z)
+    moment2 = delta - (b1 @ gamma  - b0 @ gamma)
+    # (n, n_q + 1): Each row describes the full moment for a single data point.
+    moment = np.c_[moment1, moment2]
+    Sigma0 = 1/N * (moment.T @ moment)
+    M = np.zeros((k, k))
+    # q: (n, k-1) and b: (n, k-1)
+    M[:k-1,:k-1] = -1/N * q(V, X, Z).T @ b
+    M[k-1,k-1] = 1
+    M[k-1, 3] = -1
+    M[k-1, 4] = -1 * np.mean(V)
+    M[k-1, 5] = -1 * np.mean(W)
+    Sigma1 = np.linalg.inv(M.T @ M) @ M.T
+
+    delta = theta[k-1]
+    ci_radius = 1.96 * np.sqrt((Sigma1 @ Sigma0 @ Sigma1.T)[k-1,k-1] / N)
+    ci = [delta - ci_radius, delta + ci_radius]
+
+    return theta[k-1], ci #Last entry should be Delta, the ATE.
 
 
 def ipw(V, W, X, Y, Z):

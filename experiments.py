@@ -45,8 +45,10 @@ def iid_exp():
     
             
             for N_i in range(len(Ns)):
+                ci_correct = 0
                 N = Ns[N_i]
-                print(f"eta: {eta}, xi: {xi}, N: {N}")
+
+                print(f"xi: {xi}, eta: {eta}, N: {N}")
                 gmm_results = []
                 ipw_results = []
                 ols_results = []
@@ -58,21 +60,24 @@ def iid_exp():
                     b_matrix = np.c_[np.ones(N), V, W, X, X*V, X*W]
                     b1_matrix = np.c_[np.ones(N), V, W, np.ones(N), V, W]
                     b0_matrix = np.c_[np.ones(N), V, W, np.zeros(N), np.zeros(N), np.zeros(N)]
-                    def b(V, W, X, gamma):
-                        if np.all(X == np.ones(N)):
-                            return b1_matrix @ gamma
-                        elif np.all(X == np.zeros(N)): 
-                            return b0_matrix @ gamma
-                        else:
-                            return b_matrix @ gamma
+                    # def b(V, W, X, gamma):
+                    #     if np.all(X == np.ones(N)):
+                    #         return b1_matrix @ gamma
+                    #     elif np.all(X == np.zeros(N)): 
+                    #         return b0_matrix @ gamma
+                    #     else:
+                    #         return b_matrix @ gamma
                     
                     q_matrix = np.c_[np.ones(N), V, X, Z, X*V, X*Z]
                     def q(V, X, Z):
                         return q_matrix
                     
 
-                    result = binary_proximal_GMM(V, W, X, Y, Z, b, q, k)
-                    gmm_results.append(result)
+                    result = binary_proximal_GMM(V, W, X, Y, Z, b_matrix, b0_matrix, b1_matrix, q, k)
+                    gmm_results.append(result[0])
+                    ci = result[1]
+                    if ci[0] <= 0.5 and 0.5 <= ci[1]:
+                        ci_correct += 1
 
                     result = ipw(V, W, X, Y, Z)
                     ipw_results.append(result)
@@ -83,6 +88,8 @@ def iid_exp():
                 gmm_results_.append(gmm_results)
                 ipw_results_.append(ipw_results)
                 ols_results_.append(ols_results)
+
+                print(ci_correct / num_sims)
 
 
             subplot.boxplot(gmm_results_, showfliers=False, positions = range(1, len(Ns)+1), widths = 0.5)
