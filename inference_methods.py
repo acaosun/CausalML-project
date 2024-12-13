@@ -75,7 +75,7 @@ def binary_proximal_GMM(V: np.ndarray, W: np.ndarray, X, Y, Z, b: Callable, q: C
 
 def ipw(V, W, X, Y, Z):
     """
-    Assume that V, W, X, Y, Z are all of shape (N,)
+    Assume that V, W, X, Y, Z are all of shape (N,) 
     """
     N = Y.shape[0]
 

@@ -91,6 +91,7 @@ def iid_exp():
             subplot.axhline(y=0.5, linestyle='--')
 
             subplot.set_xticks([(1 + len(Ns)) / 2, (len(Ns)+2 + 2*len(Ns)+1) / 2, (2*len(Ns)+3 + 3*len(Ns)+2) / 2], labels = ["NC", "IPW", "OLS"])
+            subplot.set_ylim(-0.5, 2.5)
     plt.show()
 
 
